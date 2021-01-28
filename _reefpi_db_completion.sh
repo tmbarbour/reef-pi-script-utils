@@ -85,17 +85,29 @@ _get_item_options()
     _get_item_type
     _get_configured_item_suggestions
 }
-_db_list_buckets()
+_list_buckets()
 {
     _get_buckets
     COMPREPLY=($(compgen -W "$BUCKETS" -- ${cur}))
+}
+
+_db_list_handler()
+{
+    case ${COMP_CWORD} in
+        3) # completing 3rd term
+            _list_buckets
+            ;;
+        *)
+            COMPREPLY=()
+            ;;
+    esac  
 }
 
 _bucket_item_handler()
 {
     case ${COMP_CWORD} in
         3) # completing 3rd term
-            _db_list_buckets
+            _list_buckets
             ;;
         4) # completing 4th term
             _get_item_options
@@ -110,7 +122,7 @@ _db_create_handler()
 {
     case ${COMP_CWORD} in
         3) # completing 3rd term
-            _db_list_buckets
+            _list_buckets
             ;;
         4) # completing 4th term
             COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${cur}))
@@ -138,7 +150,7 @@ _db_update_handler()
 {
     case ${COMP_CWORD} in
         3) # completing 3rd term
-            _db_list_buckets
+            _list_buckets
             ;;
         4) # completing 4th term
             _get_item_options
@@ -179,7 +191,7 @@ _reef-pi_completions()
         3 | 4 | 5 | 6 ) # three or more
             case ${target} in
                 buckets)  return  ;;
-                list)     _db_list_buckets ;;
+                list)     _db_list_handler ;;
                 show)     _db_show_handler ;;
                 create)   _db_create_handler ;;
                 delete)   _db_delete_handler ;;
