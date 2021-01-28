@@ -1,3 +1,11 @@
+#!/bin/bash
+###############################################################
+# Bash completion script for reef-pi command line db function
+#
+# should be installed in 
+#  /usr/share/bash-completion/completions/ as _reef-pi
+# so that it is available in all terminal shells
+###############################################################
 _set_option_variables() {
     TOP_LEVEL_OPTIONS="db"
     DB_OPTIONS="buckets list show create update delete --help"
