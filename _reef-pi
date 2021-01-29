@@ -13,12 +13,14 @@ _set_option_variables() {
     RESTORE_DB_BACKUP_OPTIONS=("/var/lib/reef-pi/reef-pi.db.old")
     RESTORE_DB_CURRENT_OPTIONS=("/var/lib/reef-pi/reef-pi.db")
     RESTORE_DB_NEW_OPTIONS=("/var/lib/reef-pi/reef-pi.db.new")
+    INSTALL_OPTIONS=("--version")
     INPUT_OPTION="-input"
     OUTPUT_OPTION="-output"
     STORE_OPTION="-output"
     REEF_PI_LIST_ITEMS_CMD="sudo reef-pi db list "
     REEF_PI_LIST_REEF_PI_CMD="sudo reef-pi db list reef-pi "
     REEF_PI_BUCKETS_CMD="sudo reef-pi db buckets "
+    REEF_PI_VERSION_CMD="sudo reef-pi --version "
     USER_ENTRY=0
     PASSWORD_ENTRY=1
 }
@@ -376,6 +378,30 @@ _restore_db_handler()
     esac
 }
 
+_install_version_handler()
+{
+    case ${PREV} in
+        --version)  
+            
+        ;; 
+        *)      COMPREPLY=()      ;;
+    esac
+}
+
+_install_handler()
+{
+    case ${PREV} in
+        --version)  
+            local current_version=$($REEF_PI_VERSION_CMD)
+            COMPREPLY=($(compgen -W "${current_version}" -- ${CUR})) 
+        ;;
+        *) 
+            _get_valid_options INSTALL_OPTIONS
+            COMPREPLY=($(compgen -W "${INSTALL_OPTIONS[*]}" -- ${CUR})) 
+        ;;
+    esac
+}
+
 _reef-pi_completions()
 {
     local TOP_LEVEL_OPTIONS DB_OPTIONS
@@ -397,6 +423,7 @@ _reef-pi_completions()
                 db)  _db_handler ;;
                 reset-password) _reset_password_handler ;;
                 restore-db) _restore_db_handler ;;
+                install) _install_handler ;;
             esac
             ;;
         *)
