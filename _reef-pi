@@ -9,11 +9,15 @@
 _set_option_variables() {
     TOP_LEVEL_OPTIONS="db daemon restore-db reset-password install --help --version"
     DB_OPTIONS="buckets list show create update delete --help"
+    RESET_PASSWORD_OPTIONS=("-user" "-password" "-config" "--help")
     INPUT_OPTION="-input"
     OUTPUT_OPTION="-output"
     STORE_OPTION="-output"
     REEF_PI_LIST_ITEMS_CMD="sudo reef-pi db list "
+    REEF_PI_LIST_REEF_PI_CMD="sudo reef-pi db list reef-pi "
     REEF_PI_BUCKETS_CMD="sudo reef-pi db buckets "
+    USER_ENTRY=0
+    PASSWORD_ENTRY=1
 }
 
 # helper logging method
@@ -23,9 +27,49 @@ _get_buckets()
 {
     BUCKETS=("$(${REEF_PI_BUCKETS_CMD} | tr '\n' ' ')")
 }
+_parse_reef_pi_json_for_user_pwd() {
+    PYTHON_CODE_TO_EXTRACT_USER_PWD=$(cat <<END_PY_USER
+import json
+import sys
+
+stdin_str = ""
+for line in sys.stdin:
+    stdin_str += line
+
+resp = json.loads(stdin_str)
+
+print("%s"%(resp['credentials']['user']))
+print("%s"%(resp['credentials']['password']))
+    
+END_PY_USER
+)
+    USER_PWD_SUGGESTION="$(echo ${REEF_PI_JSON} | python3 -c "$PYTHON_CODE_TO_EXTRACT_USER_PWD" )"
+}
+
+_get_user_pwd_suggestion_array()
+{
+    local USER_PWD_SUGGESTION
+    _parse_reef_pi_json_for_user_pwd
+    local IFS=$'\n'      # Change IFS to new line - convert new lines to array
+    SUGGESTIONS=($USER_PWD_SUGGESTION)
+}
+
+_parse_reef_pi_json_for_user()
+{
+    local SUGGESTIONS
+    _get_user_pwd_suggestion_array
+    USER_SUGGESTION=${SUGGESTIONS[USER_ENTRY]}
+}
+
+_parse_reef_pi_json_for_password()
+{
+    local SUGGESTIONS
+    _get_user_pwd_suggestion_array
+    PASSWORD_SUGGESTION=${SUGGESTIONS[PASSWORD_ENTRY]}
+}
 
 _parse_reef_pi_json_for_items() {
-PYTHON_CODE_TO_EXTRACT_ID_AND_NAME=$(cat <<END
+    PYTHON_CODE_TO_EXTRACT_ID_AND_NAME=$(cat <<END_PY_ITEM
 import json
 import sys
 
@@ -38,10 +82,11 @@ resp = json.loads(stdin_str)
 for key in resp:
     print("%s <%s>"%(resp[key]['id'],resp[key]['name']))
     
-END
+END_PY_ITEM
 )
     CONFIGURED_ITEM_SUGGESTIONS="$(echo ${CONFIGURED_ITEMS_JSON} | python3 -c "$PYTHON_CODE_TO_EXTRACT_ID_AND_NAME" )"
 }
+
 
 _get_item_type() 
 {
@@ -95,10 +140,11 @@ _get_item_options()
     _get_item_type
     _get_configured_item_suggestions
 }
+
 _list_buckets()
 {
     _get_buckets
-    COMPREPLY=($(compgen -W "$BUCKETS" -- ${cur}))
+    COMPREPLY=($(compgen -W "$BUCKETS" -- ${CUR}))
 }
 
 _db_list_handler()
@@ -111,6 +157,24 @@ _db_list_handler()
             COMPREPLY=()
             ;;
     esac  
+}
+
+_db_create_handler()
+{
+    case ${COMP_CWORD} in
+        3) # completing 3rd term
+            _list_buckets
+            ;;
+        4) # completing 4th term
+            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${CUR}))
+            ;;
+        5) # completing 5th term
+            COMPREPLY=($(compgen -f  -- "${CUR}")) #files for input
+            ;;
+        *) 
+            COMPREPLY=()
+            ;;
+    esac 
 }
 
 _bucket_item_handler()
@@ -126,24 +190,6 @@ _bucket_item_handler()
             COMPREPLY=()
             ;;
     esac  
-}
-
-_db_create_handler()
-{
-    case ${COMP_CWORD} in
-        3) # completing 3rd term
-            _list_buckets
-            ;;
-        4) # completing 4th term
-            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${cur}))
-            ;;
-        5) # completing 5th term
-            COMPREPLY=($(compgen -f  -- "${cur}")) #files for input
-            ;;
-        *) 
-            COMPREPLY=()
-            ;;
-    esac 
 }
 
 _db_delete_handler()
@@ -166,10 +212,10 @@ _db_update_handler()
             _get_item_options
             ;; 
         5) # completing 5th term
-            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${cur}))
+            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${CUR}))
             ;;
         6) # completing 6th term
-            COMPREPLY=($(compgen -f  -- "${cur}")) #files for input
+            COMPREPLY=($(compgen -f  -- "${CUR}")) #files for input
             ;;
         *) 
             COMPREPLY=()
@@ -186,7 +232,7 @@ _db_handler()
 
     case ${COMP_CWORD} in
         2) # two arguments
-            COMPREPLY=($(compgen -W "$DB_OPTIONS" -- ${cur})) ;;
+            COMPREPLY=($(compgen -W "$DB_OPTIONS" -- ${CUR})) ;;
         3 | 4 | 5 | 6 ) # three or more
             case ${action} in
                 buckets)  return  ;;
@@ -203,13 +249,91 @@ _db_handler()
     esac 
 }
 
+_get_reef_pi_user()
+{
+    local USER_SUGGESTION
+    local REEF_PI_JSON="$($REEF_PI_LIST_REEF_PI_CMD)"
+    _parse_reef_pi_json_for_user
+    COMPREPLY=($(compgen -W "$USER_SUGGESTION" -- ${CUR}))
+}
+
+_get_reef_pi_password()
+{
+    local PASSWORD_SUGGESTION
+    local REEF_PI_JSON="$($REEF_PI_LIST_REEF_PI_CMD)"
+    _parse_reef_pi_json_for_password
+    COMPREPLY=($(compgen -W "$PASSWORD_SUGGESTION" -- ${CUR}))
+}
+
+_remove_elements_from_array()
+{
+    declare -n array="$1"
+    for target in "${ELEMENTS_TO_REMOVE[@]}"; do
+        for i in "${!array[@]}"; do
+            if [[ $target = ${array[i]} ]]; then
+                unset 'array[i]'
+            fi
+        done
+    done
+}
+
+_get_valid_reset_options()
+{
+    local ELEMENTS_TO_REMOVE=()
+    for argument in ${COMP_WORDS[*]}; do
+        for i in "${!RESET_PASSWORD_OPTIONS[@]}"; do
+            if [[ ${RESET_PASSWORD_OPTIONS[i]} = ${argument} ]]; then 
+                ELEMENTS_TO_REMOVE+=(${argument})
+            fi 
+        done
+    done
+    _remove_elements_from_array RESET_PASSWORD_OPTIONS
+}
+
+_reset_password_user_handler()
+{
+    case ${PREV} in
+        -user)  _get_reef_pi_user ;; 
+        *)      COMPREPLY=()      ;;
+    esac
+}
+
+_reset_password_password_handler()
+{
+    case ${PREV} in
+        -password)  _get_reef_pi_password ;; 
+        *)          COMPREPLY=()      ;;
+    esac
+}
+
+_reset_password_config_handler()
+{
+    case ${PREV} in
+        -config)  COMPREPLY=($(compgen -f -- "/etc/reef-pi/"; compgen -f -- ${CUR}))  ;; 
+        *)        COMPREPLY=()      ;;
+    esac
+}
+
+_reset_password_handler()
+{
+    case ${PREV} in
+        -user)     _reset_password_user_handler ;;
+        -password) _reset_password_password_handler ;;
+        -config)   _reset_password_config_handler ;;
+        *) 
+            _get_valid_reset_options
+            COMPREPLY=($(compgen -W "${RESET_PASSWORD_OPTIONS[*]}" -- ${CUR})) 
+        ;;
+    esac
+}
+
 _reef-pi_completions()
 {
     local TOP_LEVEL_OPTIONS DB_OPTIONS
     _set_option_variables
 
-    local cur PREV category
-    cur=${COMP_WORDS[COMP_CWORD]}
+    local CUR PREV category
+    CUR=${COMP_WORDS[COMP_CWORD]}
     PREV=${COMP_WORDS[COMP_CWORD-1]}
     if [[ "${#COMP_WORDS[@]}" -gt "2" ]]; then
         category=${COMP_WORDS[1]}
@@ -217,11 +341,12 @@ _reef-pi_completions()
 
     case ${COMP_CWORD} in
         1) # one argument
-            COMPREPLY=($(compgen -W "$TOP_LEVEL_OPTIONS" -- ${cur}))
+            COMPREPLY=($(compgen -W "$TOP_LEVEL_OPTIONS" -- ${CUR}))
             ;;
-        2 | 3 | 4 | 5 | 6 ) # two or more arguments
+        2 | 3 | 4 | 5 | 6 | 7 ) # two or more arguments
             case ${category} in
                 db)  _db_handler ;;
+                reset-password) _reset_password_handler ;;
             esac
             ;;
         *)

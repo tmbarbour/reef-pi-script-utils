@@ -1,18 +1,24 @@
 # reef-pi-script-utils
 Script utilities for the Reef-pi reef tank controller
 
-## Reef Pi DB Completion Script (_reef-pi)
+## reef-pi Completion Script ( _reef-pi )
 
-This Bash completion script will provide context-sensative options for the ``reef-pi db `` command using Bash's builtin completion feature with the &lt;TAB&gt; &lt;TAB&gt; key strokes.  
+This Bash completion script will provide context-sensative options for the 
+* ``reef-pi db ``  
+* ``reef-pi reset-password ``
+
+commands using Bash's builtin completion feature with the &lt;TAB&gt; &lt;TAB&gt; key strokes.  
 
 It will automatically provide the correct options for configured items in the user's reef-pi system.
 
 Example
-<pre><code>
-sudo reef-pi db show e&lt;TAB&gt; &lt;TAB&gt; 
+<pre><code>%sudo reef-pi reset-password &lt;TAB&gt; &lt;TAB&gt;
+-config    --help     -password  -user      
+
+%sudo reef-pi db show e&lt;TAB&gt; &lt;TAB&gt; 
 equipment  errors  
  
-sudo reef-pi db show equipment&lt;TAB&gt; &lt;TAB&gt; 
+%sudo reef-pi db show equipment&lt;TAB&gt; &lt;TAB&gt; 
     11 &lt;Outlet 8&gt;
     3 &lt;Outlet 1&gt;
     4 &lt;Heater&gt;
