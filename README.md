@@ -25,6 +25,8 @@ sudo reef-pi db show equipment&lt;TAB&gt; &lt;TAB&gt;
 
 Hitting &lt;TAB&gt; &lt;TAB&gt; after the equipment argument, will display the list of equiment items configured, with the internal id first and then help text in angle brackets with the configured name.
 
-![Demo Gif](https://github.com/tmbarbour/reef-pi-script-utils/raw/images/reef-pi-completion-demo-2.gif "reef-pi db completion demo")
+![Demo Gif](https://github.com/tmbarbour/reef-pi-script-utils/blob/main/images/reef-pi-completion-demo-2.gif?raw=true "reef-pi db completion demo")
+
+
 
 The install script, copies the completion script to the ``/usr/share/bash-completion/completions/ ``directory so that it is automatically sourced and available for every new Bash shell
