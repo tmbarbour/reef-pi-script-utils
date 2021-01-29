@@ -6,12 +6,13 @@ Script utilities for the Reef-pi reef tank controller
 This Bash completion script will provide context-sensative options for the 
 * ``reef-pi db ``  
 * ``reef-pi reset-password ``
+* ``reef-pi restore-db ``
 
 commands using Bash's builtin completion feature with the &lt;TAB&gt; &lt;TAB&gt; key strokes.  
 
 It will automatically provide the correct options for configured items in the user's reef-pi system.
 
-Example
+Examples
 <pre><code>%sudo reef-pi reset-password &lt;TAB&gt; &lt;TAB&gt;
 -config    --help     -password  -user      
 
@@ -32,7 +33,5 @@ equipment  errors
 Hitting &lt;TAB&gt; &lt;TAB&gt; after the equipment argument, will display the list of equiment items configured, with the internal id first and then help text in angle brackets with the configured name.
 
 ![Demo Gif](https://github.com/tmbarbour/reef-pi-script-utils/blob/main/images/reef-pi-completion-demo-2.gif?raw=true "reef-pi db completion demo")
-
-
 
 The install script, copies the completion script to the ``/usr/share/bash-completion/completions/ ``directory so that it is automatically sourced and available for every new Bash shell

@@ -30,6 +30,7 @@ _get_buckets()
 {
     BUCKETS=("$(${REEF_PI_BUCKETS_CMD} | tr '\n' ' ')")
 }
+
 _parse_reef_pi_json_for_user_pwd() {
     PYTHON_CODE_TO_EXTRACT_USER_PWD=$(cat <<END_PY_USER
 import json
