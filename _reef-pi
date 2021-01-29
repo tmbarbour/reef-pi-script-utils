@@ -1,10 +1,9 @@
 #!/bin/bash
 ###############################################################
-# Bash completion script for reef-pi command line db function
-#
-# should be installed in 
-#  /usr/share/bash-completion/completions/ as _reef-pi
-# so that it is available in all terminal shells
+# Bash completion script for reef-pi command line function
+# it should be installed in 
+#    /usr/share/bash-completion/completions/_reef-pi
+# so that it's available in all bash terminal shells
 ###############################################################
 _set_option_variables() {
     TOP_LEVEL_OPTIONS="db daemon restore-db reset-password install --help --version"
@@ -280,6 +279,7 @@ _remove_elements_from_array()
 _get_valid_reset_options()
 {
     local ELEMENTS_TO_REMOVE=()
+    # iterate throught the existing command line and remove options already used
     for argument in ${COMP_WORDS[*]}; do
         for i in "${!RESET_PASSWORD_OPTIONS[@]}"; do
             if [[ ${RESET_PASSWORD_OPTIONS[i]} = ${argument} ]]; then 
