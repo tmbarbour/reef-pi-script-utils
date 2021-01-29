@@ -4,10 +4,11 @@ Script utilities for the Reef-pi reef tank controller
 ## reef-pi Completion Script ( _reef-pi )
 
 This Bash completion script will provide context-sensative options for the 
+* ``reef-pi daemon ``
 * ``reef-pi db ``  
+* ``reef-pi install ``
 * ``reef-pi reset-password ``
 * ``reef-pi restore-db ``
-* ``reef-pi install ``
 
 commands using Bash's builtin completion feature with the &lt;TAB&gt; &lt;TAB&gt; key strokes.  
 

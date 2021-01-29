@@ -6,8 +6,9 @@
 # so that it's available in all bash terminal shells
 ###############################################################
 _set_option_variables() {
-    TOP_LEVEL_OPTIONS="db daemon restore-db reset-password install --help --version"
+    TOP_LEVEL_OPTIONS=("db daemon restore-db reset-password install --help -version")
     DB_OPTIONS="buckets list show create update delete --help"
+    DAEMON_OPTIONS=("-config" "--help")
     RESET_PASSWORD_OPTIONS=("-user" "-password" "-config" "--help")
     RESTORE_DB_OPTIONS=("-backup" "-current" "-new" "--help")
     RESTORE_DB_BACKUP_OPTIONS=("/var/lib/reef-pi/reef-pi.db.old")
@@ -20,7 +21,8 @@ _set_option_variables() {
     REEF_PI_LIST_ITEMS_CMD="sudo reef-pi db list "
     REEF_PI_LIST_REEF_PI_CMD="sudo reef-pi db list reef-pi "
     REEF_PI_BUCKETS_CMD="sudo reef-pi db buckets "
-    REEF_PI_VERSION_CMD="sudo reef-pi --version "
+    REEF_PI_VERSION_CMD="sudo reef-pi -version "
+    REEF_PI_CONFIG_PATH="/etc/reef-pi/reef-pi.yml"
     USER_ENTRY=0
     PASSWORD_ENTRY=1
 }
@@ -282,25 +284,24 @@ _remove_elements_from_array()
     done
 }
 
-_build_elements_to_remove_from_current_command_line()
+_build_used_arguments_in_current_command_line()
 {
     declare -n options_array="$1"
     # iterate throught the existing command line and remove options already used
-    for argument in ${COMP_WORDS[*]}; do
+   for argument in ${COMP_WORDS[*]}; do
         for i in "${!options_array[@]}"; do
             if [[ ${options_array[i]} = ${argument} ]]; then 
                 ELEMENTS_TO_REMOVE+=(${argument})
             fi 
         done
     done
-    _remove_elements_from_array options_array
 }
 
 _get_valid_options()
 {
-    declare -n options="$1"
+   declare -n options="$1"
     local ELEMENTS_TO_REMOVE=()
-    _build_elements_to_remove_from_current_command_line options
+    _build_used_arguments_in_current_command_line options
     _remove_elements_from_array options
 }
 
@@ -381,8 +382,7 @@ _restore_db_handler()
 _install_version_handler()
 {
     case ${PREV} in
-        --version)  
-            
+        --version)      
         ;; 
         *)      COMPREPLY=()      ;;
     esac
@@ -402,28 +402,39 @@ _install_handler()
     esac
 }
 
+_daemon_handler()
+{
+    case ${PREV} in
+        -config)  
+            COMPREPLY=($(compgen -W "${REEF_PI_CONFIG_PATH}" -- ${CUR})) 
+        ;;
+        *) 
+            _get_valid_options DAEMON_OPTIONS
+            COMPREPLY=($(compgen -W "${DAEMON_OPTIONS[*]}" -- ${CUR})) 
+        ;;
+    esac
+}
+
 _reef-pi_completions()
 {
-    local TOP_LEVEL_OPTIONS DB_OPTIONS
     _set_option_variables
 
     local CUR PREV category
     CUR=${COMP_WORDS[COMP_CWORD]}
     PREV=${COMP_WORDS[COMP_CWORD-1]}
-    if [[ "${#COMP_WORDS[@]}" -gt "2" ]]; then
-        category=${COMP_WORDS[1]}
-    fi
 
     case ${COMP_CWORD} in
         1) # one argument
             COMPREPLY=($(compgen -W "$TOP_LEVEL_OPTIONS" -- ${CUR}))
             ;;
         2 | 3 | 4 | 5 | 6 | 7 ) # two or more arguments
+            category=${COMP_WORDS[1]}
             case ${category} in
-                db)  _db_handler ;;
+                daemon)         _daemon_handler ;;
+                db)             _db_handler ;;
+                install)        _install_handler ;;
                 reset-password) _reset_password_handler ;;
-                restore-db) _restore_db_handler ;;
-                install) _install_handler ;;
+                restore-db)     _restore_db_handler ;;
             esac
             ;;
         *)
