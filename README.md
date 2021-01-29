@@ -3,7 +3,7 @@ Script utilities for the Reef-pi reef tank controller
 
 ## reef-pi Completion Script ( _reef-pi )
 
-This Bash completion script will provide context-sensative options for the 
+This Bash completion script will provide context-sensitive options for the 
 * ``reef-pi daemon ``
 * ``reef-pi db ``  
 * ``reef-pi install ``
