@@ -7,9 +7,11 @@
 # so that it is available in all terminal shells
 ###############################################################
 _set_option_variables() {
-    TOP_LEVEL_OPTIONS="db"
+    TOP_LEVEL_OPTIONS="db daemon restore-db reset-password install --help --version"
     DB_OPTIONS="buckets list show create update delete --help"
     INPUT_OPTION="-input"
+    OUTPUT_OPTION="-output"
+    STORE_OPTION="-output"
     REEF_PI_LIST_ITEMS_CMD="sudo reef-pi db list "
     REEF_PI_BUCKETS_CMD="sudo reef-pi db buckets "
 }
@@ -89,7 +91,7 @@ _get_configured_item_suggestions()
 _get_item_options()
 {
     local ITEM_TYPE ITEM
-    ITEM=${prev}
+    ITEM=${PREV}
     _get_item_type
     _get_configured_item_suggestions
 }
@@ -175,35 +177,51 @@ _db_update_handler()
     esac 
 }
 
-_reef-pi_completions()
+_db_handler()
 {
-    local TOP_LEVEL_OPTIONS DB_OPTIONS
-    _set_option_variables
-
-    local cur prev max target
-    cur=${COMP_WORDS[COMP_CWORD]}
-    prev=${COMP_WORDS[COMP_CWORD-1]}
+    local action
     if [[ "${#COMP_WORDS[@]}" -gt "3" ]]; then
-        target=${COMP_WORDS[2]}
+        action=${COMP_WORDS[2]}
     fi
 
     case ${COMP_CWORD} in
-        1) # one argument
-            COMPREPLY=($(compgen -W "$TOP_LEVEL_OPTIONS" -- ${cur}))
-            ;;
         2) # two arguments
-            case ${prev} in
-                db)  COMPREPLY=($(compgen -W "$DB_OPTIONS" -- ${cur})) ;;
-            esac
-            ;;
+            COMPREPLY=($(compgen -W "$DB_OPTIONS" -- ${cur})) ;;
         3 | 4 | 5 | 6 ) # three or more
-            case ${target} in
+            case ${action} in
                 buckets)  return  ;;
                 list)     _db_list_handler ;;
                 show)     _db_show_handler ;;
                 create)   _db_create_handler ;;
                 delete)   _db_delete_handler ;;
                 update)   _db_update_handler ;;
+            esac
+            ;;
+        *) 
+            COMPREPLY=()
+            ;;
+    esac 
+}
+
+_reef-pi_completions()
+{
+    local TOP_LEVEL_OPTIONS DB_OPTIONS
+    _set_option_variables
+
+    local cur PREV category
+    cur=${COMP_WORDS[COMP_CWORD]}
+    PREV=${COMP_WORDS[COMP_CWORD-1]}
+    if [[ "${#COMP_WORDS[@]}" -gt "2" ]]; then
+        category=${COMP_WORDS[1]}
+    fi
+
+    case ${COMP_CWORD} in
+        1) # one argument
+            COMPREPLY=($(compgen -W "$TOP_LEVEL_OPTIONS" -- ${cur}))
+            ;;
+        2 | 3 | 4 | 5 | 6 ) # two or more arguments
+            case ${category} in
+                db)  _db_handler ;;
             esac
             ;;
         *)
