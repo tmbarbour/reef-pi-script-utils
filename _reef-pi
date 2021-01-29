@@ -9,6 +9,10 @@ _set_option_variables() {
     TOP_LEVEL_OPTIONS="db daemon restore-db reset-password install --help --version"
     DB_OPTIONS="buckets list show create update delete --help"
     RESET_PASSWORD_OPTIONS=("-user" "-password" "-config" "--help")
+    RESTORE_DB_OPTIONS=("-backup" "-current" "-new" "--help")
+    RESTORE_DB_BACKUP_OPTIONS=("/var/lib/reef-pi/reef-pi.db.old")
+    RESTORE_DB_CURRENT_OPTIONS=("/var/lib/reef-pi/reef-pi.db")
+    RESTORE_DB_NEW_OPTIONS=("/var/lib/reef-pi/reef-pi.db.new")
     INPUT_OPTION="-input"
     OUTPUT_OPTION="-output"
     STORE_OPTION="-output"
@@ -85,7 +89,6 @@ END_PY_ITEM
 )
     CONFIGURED_ITEM_SUGGESTIONS="$(echo ${CONFIGURED_ITEMS_JSON} | python3 -c "$PYTHON_CODE_TO_EXTRACT_ID_AND_NAME" )"
 }
-
 
 _get_item_type() 
 {
@@ -266,28 +269,36 @@ _get_reef_pi_password()
 
 _remove_elements_from_array()
 {
-    declare -n array="$1"
+    declare -n source_array="$1"
     for target in "${ELEMENTS_TO_REMOVE[@]}"; do
-        for i in "${!array[@]}"; do
-            if [[ $target = ${array[i]} ]]; then
-                unset 'array[i]'
+        for i in "${!source_array[@]}"; do
+            if [[ $target = ${source_array[i]} ]]; then
+                unset 'source_array[i]'
             fi
         done
     done
 }
 
-_get_valid_reset_options()
+_build_elements_to_remove_from_current_command_line()
 {
-    local ELEMENTS_TO_REMOVE=()
+    declare -n options_array="$1"
     # iterate throught the existing command line and remove options already used
     for argument in ${COMP_WORDS[*]}; do
-        for i in "${!RESET_PASSWORD_OPTIONS[@]}"; do
-            if [[ ${RESET_PASSWORD_OPTIONS[i]} = ${argument} ]]; then 
+        for i in "${!options_array[@]}"; do
+            if [[ ${options_array[i]} = ${argument} ]]; then 
                 ELEMENTS_TO_REMOVE+=(${argument})
             fi 
         done
     done
-    _remove_elements_from_array RESET_PASSWORD_OPTIONS
+    _remove_elements_from_array options_array
+}
+
+_get_valid_options()
+{
+    declare -n options="$1"
+    local ELEMENTS_TO_REMOVE=()
+    _build_elements_to_remove_from_current_command_line options
+    _remove_elements_from_array options
 }
 
 _reset_password_user_handler()
@@ -321,8 +332,45 @@ _reset_password_handler()
         -password) _reset_password_password_handler ;;
         -config)   _reset_password_config_handler ;;
         *) 
-            _get_valid_reset_options
+            _get_valid_options RESET_PASSWORD_OPTIONS
             COMPREPLY=($(compgen -W "${RESET_PASSWORD_OPTIONS[*]}" -- ${CUR})) 
+        ;;
+    esac
+}
+
+_restore_db_backup_handler()
+{
+    case ${PREV} in
+        -backup)  COMPREPLY=($(compgen -W "${RESTORE_DB_BACKUP_OPTIONS}" -- ${CUR})) ;; 
+        *)      COMPREPLY=()      ;;
+    esac
+}
+
+_restore_db_current_handler()
+{
+    case ${PREV} in
+        -current)  COMPREPLY=($(compgen -W "${RESTORE_DB_CURRENT_OPTIONS}" -- ${CUR})) ;; 
+        *)      COMPREPLY=()      ;;
+    esac
+}
+
+_restore_db_new_handler()
+{
+    case ${PREV} in
+        -new)  COMPREPLY=($(compgen -W "${RESTORE_DB_NEW_OPTIONS}" -- ${CUR})) ;; 
+        *)      COMPREPLY=()      ;;
+    esac
+}
+
+_restore_db_handler()
+{
+    case ${PREV} in
+        -backup)  _restore_db_backup_handler ;;
+        -current) _restore_db_current_handler ;;
+        -new)     _restore_db_new_handler ;;
+        *) 
+            _get_valid_options RESTORE_DB_OPTIONS
+            COMPREPLY=($(compgen -W "${RESTORE_DB_OPTIONS[*]}" -- ${CUR})) 
         ;;
     esac
 }
@@ -347,6 +395,7 @@ _reef-pi_completions()
             case ${category} in
                 db)  _db_handler ;;
                 reset-password) _reset_password_handler ;;
+                restore-db) _restore_db_handler ;;
             esac
             ;;
         *)
