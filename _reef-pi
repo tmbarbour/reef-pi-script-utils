@@ -14,7 +14,7 @@ _set_option_variables() {
     RESTORE_DB_BACKUP_OPTIONS=("/var/lib/reef-pi/reef-pi.db.old")
     RESTORE_DB_CURRENT_OPTIONS=("/var/lib/reef-pi/reef-pi.db")
     RESTORE_DB_NEW_OPTIONS=("/var/lib/reef-pi/reef-pi.db.new")
-    INSTALL_OPTIONS=("--version")
+    INSTALL_OPTIONS=("-version")
     INPUT_OPTION="-input"
     OUTPUT_OPTION="-output"
     STORE_OPTION="-output"
@@ -379,19 +379,10 @@ _restore_db_handler()
     esac
 }
 
-_install_version_handler()
-{
-    case ${PREV} in
-        --version)      
-        ;; 
-        *)      COMPREPLY=()      ;;
-    esac
-}
-
 _install_handler()
 {
     case ${PREV} in
-        --version)  
+        -version)  
             local current_version=$($REEF_PI_VERSION_CMD)
             COMPREPLY=($(compgen -W "${current_version}" -- ${CUR})) 
         ;;
