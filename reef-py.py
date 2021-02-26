@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys, argparse, requests, json
 import pprint
@@ -41,7 +41,7 @@ def list_handler():
         "timers":         'http://localhost/api/timers'
     }
 
-    if(url.has_key(args.type)):
+    if(args.type in url):
         session = connectToReefPiApi()
         response = session.get(url[args.type])
         output_json(response.json())
@@ -95,11 +95,15 @@ def connectToReefPiApi():
 def output_json(json_val):   
     if args.value:
         for entry in json_val:
-            if (entry.has_key(args.value)):
-                print(entry[args.value])
-            else:
-                print("value '{}' does not exist, try one of: {}".format(args.value, json_val[0].keys()))
-                return
+            for idx, value in enumerate(args.value.split(",")):
+                if (value in entry):
+                    if (idx > 0):
+                        print(args.sep, end="")
+                    print("{}".format(entry[value]), end="")
+                else:
+                    print("value '{}' does not exist, try one of: {}".format(value, json_val[0].keys()), end="")
+                    return
+            print("")
     else:
         if args.pretty:
             print(json.dumps(json_val, indent=4, sort_keys=True))
@@ -127,11 +131,14 @@ def parse_args(argv):
     parser_list.add_argument("type",choices=type_options())
     parser_list.add_argument("--pretty", help="Pretty print output", default=False, action='store_true')
     parser_list.add_argument("--value", help="Extract value from json (dot notation)")
+    parser_list.add_argument("--sep", help="separator for multiple values",default=",")
 
     parser_show = subparsers.add_parser('show', help='Show reef-pi items')
     parser_show.add_argument("type",choices=show_options())
     parser_show.add_argument("id",type=int)
     parser_show.add_argument("--pretty", help="Pretty print output", default=False, action='store_true')
+    parser_list.add_argument("--value", help="Extract value from json (dot notation)")
+    parser_list.add_argument("--sep", help="separator for multiple values",default=",")
 
     parser_show = subparsers.add_parser('buckets', help='Show reef-pi buckets')
 
