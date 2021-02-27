@@ -109,7 +109,7 @@ _get_item_type()
         ;;
     esac
 
-    ITEM_TYPE=$(echo $ITEM_TYPE | tr "_" "\n") #effectively strip off everything after the underscore
+    ITEM_TYPE=${ITEM_TYPE%_*} #truncate after underscore
 }
 
 _get_reef_pi_configured_items()

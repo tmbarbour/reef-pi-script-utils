@@ -76,7 +76,7 @@ def show_handler():
         "temperature":    'http://localhost/api/tcs/{}',
         "temperature_current": 'http://localhost/api/tcs/{}/current_reading',
         "temperature_usage":   'http://localhost/api/tcs/{}/usage',
-        "timers":         'http://localhost/api/timers'
+        "timers":         'http://localhost/api/timers/{}'
     }
 
     if(args.type in url):
@@ -99,24 +99,37 @@ def connectToReefPiApi():
 
 def output_json(json_val):   
     if args.value:
-        if (not isinstance(json_val, list)):
-            json_val = [json_val]
-        for entry in json_val:
-            for idx, value in enumerate(args.value.split(",")):
-                #TODO allow json dot notation for nested names
-                if (value in entry):
-                    if (idx > 0):
-                        print(args.sep, end="")
-                    print("{}".format(entry[value]), end="")
-                else:
-                    print("value '{}' does not exist, try one of: {}".format(value, entry.keys()), end="")
-                    return
-            print("")
+
+        return extract_json(json_val)
     else:
         if args.pretty:
             print(json.dumps(json_val, indent=4, sort_keys=True))
         else:
             print(json.dumps(json_val))
+
+def extract_json(json_val):
+    if (not isinstance(json_val, list)):
+        json_val = [json_val]    
+    for entry in json_val:
+        for idx, value in enumerate(args.value.split(",")):
+            if (value in entry):
+                if (hasattr(args,'last') and args.last != None):
+                    if (args.last != 'empty' and isinstance(entry[value],list)):
+                        print("{}".format(entry[value][-1][args.last]), end="")
+                    elif (isinstance(entry[value],list)):
+                        print("{}".format(entry[value][-1]), end="")
+                    else:
+                        if (idx > 0):
+                            print(args.sep, end="")
+                        print("{}".format(entry[value]), end="")
+                else:
+                    if (idx > 0):
+                        print(args.sep, end="")
+                    print("{}".format(entry[value]), end="")
+            else:
+                print("value '{}' does not exist, try one of: {}".format(value, entry.keys()), end="")
+                return
+        print("")
 
 def type_options():
     bucket_list =  ['analog_inputs', 'ato', 'doser', 'drivers', 'equipment', 'errors', 'inlets', 'jacks', 
@@ -132,7 +145,20 @@ def show_options():
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, 
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Command line interface for the reef-pi API. Modeled to resemble the 'reef-pi db' command",
+        epilog=
+''' --help is available for subcommands: ./reef-py.py show --help
+
+Examples: 
+    ./reef-py.py list temperature --value id
+    ./reef-py.py list temperature --value id,name --sep ' - '
+    ./reef-py.py show temperature_usage 2 --value historical --last
+    ./reef-py.py show ph_readings 4 --value current --last
+    /reef-py.py show temperature_usage 2 --value current --last value
+'''
+    )
    
     subparsers = parser.add_subparsers(dest='action')
     parser_list = subparsers.add_parser('list', help='List reef-pi items')
@@ -145,8 +171,9 @@ def parse_args(argv):
     parser_show.add_argument("type",choices=show_options())
     parser_show.add_argument("id",type=int)
     parser_show.add_argument("--pretty", help="Pretty print output", default=False, action='store_true')
-    parser_show.add_argument("--value", help="Extract value from json (dot notation)")
+    parser_show.add_argument("--value", help="Extract value from json")
     parser_show.add_argument("--sep", help="separator for multiple values",default=",")
+    parser_show.add_argument("--last", help="last entry if --value is an array. Optionally include the json entry to extract", nargs='?', const='empty')
 
     parser_show = subparsers.add_parser('buckets', help='Show reef-pi buckets')
 

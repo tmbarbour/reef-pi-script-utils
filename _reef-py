@@ -13,7 +13,7 @@ _set_option_variables() {
 
     API_OPTIONS="buckets list show --help" # create update delete
     LIST_BUCKETS="analog_inputs ato doser drivers equipment errors inlets jacks lightings macro outlets ph_calibration ph_readings phprobes settings temperature timers"
-    OPTIONAL_ARGUMENTS="--pretty --help --value --sep"
+    OPTIONAL_ARGUMENTS="--pretty --help --value --sep --last"
     LIST_OPTIONS="${LIST_BUCKETS} ${OPTIONAL_ARGUMENTS}"
     SHOW_BUCKETS="${LIST_BUCKETS} ato_usage doser_usage temperature_current temperature_usage"
     SHOW_OPTIONS="${SHOW_BUCKETS} ${OPTIONAL_ARGUMENTS}"
@@ -41,14 +41,19 @@ _get_item_type()
         ;;
     esac
 
-    ITEM_TYPE=$(echo $ITEM_TYPE | tr "_" "\n") #effectively strip off everything after the underscore
+    #ITEM_TYPE=$(echo $ITEM_TYPE | tr "_" "\n") #effectively strip off everything after the underscore
+    ITEM_TYPE=${ITEM_TYPE%_*} #truncate after underscore
+
 }
 
 _get_reef_pi_configured_items()
 {
+    _e "Item Type: ${ITEM_TYPE}"
     if [[ ! -z "${ITEM_TYPE}" ]]; then
+        _e "Calling API to get suggestions"
         CONFIGURED_ITEM_SUGGESTIONS="$($REEF_PY_PATH/reef-py.py list $ITEM_TYPE --value id,name --sep ' - ')"
     fi
+    _e "Item suggestions: $CONFIGURED_ITEM_SUGGESTIONS"
 }
 
 _get_configured_item_suggestions()
@@ -56,6 +61,7 @@ _get_configured_item_suggestions()
     local CONFIGURED_ITEM_SUGGESTIONS 
     _get_reef_pi_configured_items
 
+    _e "Configured items: $CONFIGURED_ITEM_SUGGESTIONS"
     local IFS=$'\n'      # Change IFS to new line - convert new lines to array
     local suggestions=($CONFIGURED_ITEM_SUGGESTIONS)
 
@@ -75,7 +81,7 @@ _get_item_options()
     local ITEM_TYPE ITEM
     ITEM=${PREV}
     _get_item_type
-    _e "$ITEM_TYPE $ITEM"
+    _e "[GIO] ItemType:$ITEM_TYPE Item:$ITEM"
     _get_configured_item_suggestions
 }
 
@@ -111,7 +117,7 @@ _bucket_item_handler()
             _get_item_options
             ;;
         *)
-            COMPREPLY=()
+            COMPREPLY=($(compgen -W "${OPTIONAL_ARGUMENTS}" -- ${CUR}))
             ;;
     esac  
 }
