@@ -3,3 +3,4 @@ secrets.py
 orig/*
 auth/*.pyc
 auth/__pycache__/*
+comp.out

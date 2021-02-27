@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
 import sys, argparse, requests, json
-import pprint
 from auth import reef_pi_secrets
 
 def main(argv):
+    if not validate_auth():
+        print("auth/reef_py_secrets.py must be updated with a valid userid and password")
+        exit(1)
+
     parse_args(argv)
 
     switcher = {
@@ -16,6 +19,10 @@ def main(argv):
     func = switcher.get(args.action, lambda: "Invalid action option")
     # Execute the function
     func()
+
+def validate_auth():
+    valid = reef_pi_secrets.authorization != '<reef-pi-password>'    
+    return valid 
 
 def list_handler():
     session = connectToReefPiApi()
@@ -72,10 +79,8 @@ def show_handler():
         "timers":         'http://localhost/api/timers'
     }
 
-    print(args)
-    if(url.has_key(args.type)):
+    if(args.type in url):
         url_id = url[args.type].format(args.id)
-        print(url_id)
         session = connectToReefPiApi()
         response = session.get(url_id)
         if (response.status_code == 200):
@@ -94,14 +99,17 @@ def connectToReefPiApi():
 
 def output_json(json_val):   
     if args.value:
+        if (not isinstance(json_val, list)):
+            json_val = [json_val]
         for entry in json_val:
             for idx, value in enumerate(args.value.split(",")):
+                #TODO allow json dot notation for nested names
                 if (value in entry):
                     if (idx > 0):
                         print(args.sep, end="")
                     print("{}".format(entry[value]), end="")
                 else:
-                    print("value '{}' does not exist, try one of: {}".format(value, json_val[0].keys()), end="")
+                    print("value '{}' does not exist, try one of: {}".format(value, entry.keys()), end="")
                     return
             print("")
     else:
@@ -137,8 +145,8 @@ def parse_args(argv):
     parser_show.add_argument("type",choices=show_options())
     parser_show.add_argument("id",type=int)
     parser_show.add_argument("--pretty", help="Pretty print output", default=False, action='store_true')
-    parser_list.add_argument("--value", help="Extract value from json (dot notation)")
-    parser_list.add_argument("--sep", help="separator for multiple values",default=",")
+    parser_show.add_argument("--value", help="Extract value from json (dot notation)")
+    parser_show.add_argument("--sep", help="separator for multiple values",default=",")
 
     parser_show = subparsers.add_parser('buckets', help='Show reef-pi buckets')
 

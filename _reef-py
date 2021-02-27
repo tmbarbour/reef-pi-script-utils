@@ -6,22 +6,17 @@
 # so that it's available in all bash terminal shells
 ###############################################################
 _set_option_variables() {
+    if [[ -z "${REEF_PY_PATH}" ]]; then
+        echo "REEF_PY_PATH environment variable is not set, please fix and retry"
+        return 1
+    fi
+
     API_OPTIONS="buckets list show --help" # create update delete
     LIST_BUCKETS="analog_inputs ato doser drivers equipment errors inlets jacks lightings macro outlets ph_calibration ph_readings phprobes settings temperature timers"
-    OPTIONAL_ARGUMENTS="--pretty --help"
+    OPTIONAL_ARGUMENTS="--pretty --help --value --sep"
     LIST_OPTIONS="${LIST_BUCKETS} ${OPTIONAL_ARGUMENTS}"
     SHOW_BUCKETS="${LIST_BUCKETS} ato_usage doser_usage temperature_current temperature_usage"
     SHOW_OPTIONS="${SHOW_BUCKETS} ${OPTIONAL_ARGUMENTS}"
-    INPUT_OPTION="-input"
-    OUTPUT_OPTION="-output"
-    STORE_OPTION="-output"
-    REEF_PI_LIST_ITEMS_CMD="sudo reef-pi db list "
-    REEF_PI_LIST_REEF_PI_CMD="sudo reef-pi db list reef-pi "
-    REEF_PI_BUCKETS_CMD="sudo reef-pi db buckets "
-    REEF_PI_VERSION_CMD="sudo reef-pi -version "
-    REEF_PI_CONFIG_PATH="/etc/reef-pi/reef-pi.yml"
-    USER_ENTRY=0
-    PASSWORD_ENTRY=1
 }
 
 # helper logging method
@@ -30,66 +25,6 @@ _e() { echo "$1" >> log; }
 _get_buckets() 
 {
     BUCKETS=$SHOW_BUCKETS
-}
-
-_parse_reef_pi_json_for_user_pwd() {
-    PYTHON_CODE_TO_EXTRACT_USER_PWD=$(cat <<END_PY_USER
-import json
-import sys
-
-stdin_str = ""
-for line in sys.stdin:
-    stdin_str += line
-
-resp = json.loads(stdin_str)
-
-print("%s"%(resp['credentials']['user']))
-print("%s"%(resp['credentials']['password']))
-    
-END_PY_USER
-)
-    USER_PWD_SUGGESTION="$(echo ${REEF_PI_JSON} | python3 -c "$PYTHON_CODE_TO_EXTRACT_USER_PWD" )"
-}
-
-_get_user_pwd_suggestion_array()
-{
-    local USER_PWD_SUGGESTION
-    _parse_reef_pi_json_for_user_pwd
-    local IFS=$'\n'      # Change IFS to new line - convert new lines to array
-    SUGGESTIONS=($USER_PWD_SUGGESTION)
-}
-
-_parse_reef_pi_json_for_user()
-{
-    local SUGGESTIONS
-    _get_user_pwd_suggestion_array
-    USER_SUGGESTION=${SUGGESTIONS[USER_ENTRY]}
-}
-
-_parse_reef_pi_json_for_password()
-{
-    local SUGGESTIONS
-    _get_user_pwd_suggestion_array
-    PASSWORD_SUGGESTION=${SUGGESTIONS[PASSWORD_ENTRY]}
-}
-
-_parse_reef_pi_json_for_items() {
-    PYTHON_CODE_TO_EXTRACT_ID_AND_NAME=$(cat <<END_PY_ITEM
-import json
-import sys
-
-stdin_str = ""
-for line in sys.stdin:
-    stdin_str += line
-
-resp = json.loads(stdin_str)
-
-for key in resp:
-    print("%s <%s>"%(resp[key]['id'],resp[key]['name']))
-    
-END_PY_ITEM
-)
-    CONFIGURED_ITEM_SUGGESTIONS="$(echo ${CONFIGURED_ITEMS_JSON} | python3 -c "$PYTHON_CODE_TO_EXTRACT_ID_AND_NAME" )"
 }
 
 _get_item_type() 
@@ -111,10 +46,8 @@ _get_item_type()
 
 _get_reef_pi_configured_items()
 {
-    local CONFIGURED_ITEMS_JSON
     if [[ ! -z "${ITEM_TYPE}" ]]; then
-        CONFIGURED_ITEMS_JSON="$($REEF_PI_LIST_ITEMS_CMD $ITEM_TYPE)"
-        _parse_reef_pi_json_for_items
+        CONFIGURED_ITEM_SUGGESTIONS="$($REEF_PY_PATH/reef-py.py list $ITEM_TYPE --value id,name --sep ' - ')"
     fi
 }
 
@@ -142,18 +75,17 @@ _get_item_options()
     local ITEM_TYPE ITEM
     ITEM=${PREV}
     _get_item_type
+    _e "$ITEM_TYPE $ITEM"
     _get_configured_item_suggestions
 }
 
 _list_buckets()
 {
-    _e "_list_buckets"
     COMPREPLY=($(compgen -W "${LIST_BUCKETS}" -- ${CUR}))
 }
 
 _show_buckets()
 {
-    _e "_show_buckets"
     COMPREPLY=($(compgen -W "${SHOW_BUCKETS}" -- ${CUR}))
 }
 
@@ -167,24 +99,6 @@ _api_list_handler()
             COMPREPLY=()
             ;;
     esac  
-}
-
-_db_create_handler()
-{
-    case ${COMP_CWORD} in
-        3) # completing 3rd term
-            _list_buckets
-            ;;
-        4) # completing 4th term
-            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${CUR}))
-            ;;
-        5) # completing 5th term
-            COMPREPLY=($(compgen -f  -- "${CUR}")) #files for input
-            ;;
-        *) 
-            COMPREPLY=()
-            ;;
-    esac 
 }
 
 _bucket_item_handler()
@@ -202,45 +116,17 @@ _bucket_item_handler()
     esac  
 }
 
-_db_delete_handler()
+_api_show_handler()
 {
     _bucket_item_handler
-}
-
-_db_show_handler()
-{
-    _bucket_item_handler
-}
-
-_db_update_handler()
-{
-    case ${COMP_CWORD} in
-        3) # completing 3rd term
-            _list_buckets
-            ;;
-        4) # completing 4th term
-            _get_item_options
-            ;; 
-        5) # completing 5th term
-            COMPREPLY=($(compgen -W "$INPUT_OPTION" -- ${CUR}))
-            ;;
-        6) # completing 6th term
-            COMPREPLY=($(compgen -f  -- "${CUR}")) #files for input
-            ;;
-        *) 
-            COMPREPLY=()
-            ;;
-    esac 
 }
 
 _py_handler()
 {
-    _e "_py_handler"
     local action
     if [[ "${#COMP_WORDS[@]}" -gt "1" ]]; then
         action=${COMP_WORDS[1]}
     fi
-    _e "COMP_CWORD ${COMP_CWORD}"
     case ${COMP_CWORD} in
         1) # two arguments
             COMPREPLY=($(compgen -W "$API_OPTIONS" -- ${CUR})) ;;
@@ -248,32 +134,13 @@ _py_handler()
             case ${action} in
                 buckets)  return  ;;
                 list)     _api_list_handler ;;
-                show)     _db_show_handler ;;
-                # create)   _db_create_handler ;;
-                # delete)   _db_delete_handler ;;
-                # update)   _db_update_handler ;;
+                show)     _api_show_handler ;;
             esac
             ;;
         *) 
             COMPREPLY=()
             ;;
     esac 
-}
-
-_get_reef_pi_user()
-{
-    local USER_SUGGESTION
-    local REEF_PI_JSON="$($REEF_PI_LIST_REEF_PI_CMD)"
-    _parse_reef_pi_json_for_user
-    COMPREPLY=($(compgen -W "$USER_SUGGESTION" -- ${CUR}))
-}
-
-_get_reef_pi_password()
-{
-    local PASSWORD_SUGGESTION
-    local REEF_PI_JSON="$($REEF_PI_LIST_REEF_PI_CMD)"
-    _parse_reef_pi_json_for_password
-    COMPREPLY=($(compgen -W "$PASSWORD_SUGGESTION" -- ${CUR}))
 }
 
 _remove_elements_from_array()
@@ -311,15 +178,12 @@ _get_valid_options()
 
 _reef-py_completions()
 {
-    _e "==== completions"
-    _set_option_variables
-    _e "$SHOW_BUCKETS"
+    if _set_option_variables ; then
+        local CUR PREV category
+        CUR=${COMP_WORDS[COMP_CWORD]}
+        PREV=${COMP_WORDS[COMP_CWORD-1]}
 
-    local CUR PREV category
-    CUR=${COMP_WORDS[COMP_CWORD]}
-    PREV=${COMP_WORDS[COMP_CWORD-1]}
-
-    _py_handler
-
+        _py_handler
+    fi
 }
 complete -F _reef-py_completions reef-py.py
