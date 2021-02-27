@@ -64,7 +64,7 @@ Hitting &lt;TAB&gt; &lt;TAB&gt; after the equipment argument, will display the l
 
 ![Demo Gif](https://github.com/tmbarbour/reef-pi-script-utils/blob/main/images/reef-pi-completion-demo-2.gif?raw=true "reef-pi db completion demo")
 
-The install script, copies the completion script to the ``/usr/share/bash-completion/completions/ ``directory so that it is automatically sourced and available for every new Bash shell
+The install script, adds commands to your ~/.bashrc file to source the completion scripts so they are available for every new Bash shell
 
 *NOTE: The _reef-py completion script requires a REEF_PY_PATH environment variable. That is created if you use the installation script.
 The ./reef-py.py script requires authorization credentials (userid/password) for the API. Those are added in the ./auth/reef_py_secrets.py file*
