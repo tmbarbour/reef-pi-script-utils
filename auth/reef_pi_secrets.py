@@ -1,4 +1,4 @@
 authorization = { 
-        'user' : '<reef-pi-user>', 
-    'password' : '<reef-pi-password>' 
+        'user' : 'reef-pi', 
+    'password' : 'GBxLS0SA5qzmD44zoFQe' 
 }
