@@ -74,6 +74,7 @@ def show_handler():
         "phprobes":       'http://localhost/api/phprobes/{}',
         "settings":       'http://localhost/api/settings',
         "temperature":    'http://localhost/api/tcs/{}',
+        "temperature_read":    'http://localhost/api/tcs/{}/read',
         "temperature_current": 'http://localhost/api/tcs/{}/current_reading',
         "temperature_usage":   'http://localhost/api/tcs/{}/usage',
         "timers":         'http://localhost/api/timers/{}'

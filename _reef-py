@@ -15,7 +15,7 @@ _set_option_variables() {
     LIST_BUCKETS="analog_inputs ato doser drivers equipment errors inlets jacks lightings macro outlets ph_calibration ph_readings phprobes settings temperature timers"
     OPTIONAL_ARGUMENTS="--pretty --help --value --sep --last"
     LIST_OPTIONS="${LIST_BUCKETS} ${OPTIONAL_ARGUMENTS}"
-    SHOW_BUCKETS="${LIST_BUCKETS} ato_usage doser_usage temperature_current temperature_usage"
+    SHOW_BUCKETS="${LIST_BUCKETS} ato_usage doser_usage temperature_current temperature_usage temperature_read"
     SHOW_OPTIONS="${SHOW_BUCKETS} ${OPTIONAL_ARGUMENTS}"
 }
 
